@@ -1,0 +1,152 @@
+{
+  "id": "P17831",
+  "title": "能量水晶 / crystal",
+  "contest": "CSP-S 2026",
+  "suffix": "民间数据",
+  "url": "https://www.luogu.com.cn/problem/P17831",
+  "fetchedAt": "2026-10-31",
+  "oneLiner": "排序后把一段连续区间一起抬到最大值最划算，代价随区间右端点单调，双指针滑一遍。",
+  "summary": [
+    "有 n 颗水晶，能量值 a_i 可以是负整数。每次操作让一颗水晶 +1，最多做 m 次。",
+    "要选出若干颗，通过加操作让它们能量值相同，问最多能选几颗。",
+    "因为只能加不能减，选中的集合最后都会抬到其中最大的那个值；再往高抬只会多花操作，不会让答案更大。",
+    "例：能量 1,2,4,8,9，m=5，把 1 和 2 抬到 4 花 3+2=5 次，可以选 3 颗。"
+  ],
+  "knowledge": [
+    "排序",
+    "双指针"
+  ],
+  "keyPoints": {
+    "title": "关键观察",
+    "items": [
+      {
+        "name": "目标值就是集合最大值",
+        "code": "T = max{a[i]}",
+        "note": "只能加不能减，最终值 T 至少是集合最大；抬得更高只会多花钱，所以最优 T 就取最大值。"
+      },
+      {
+        "name": "排序后最优集合是一段区间",
+        "code": "[l, r]",
+        "note": "对固定的 T，选「不超过 T 的最大 k 个」最省；排序后就是一段连续的 [l,r]，T = a[r]。"
+      },
+      {
+        "name": "代价能 O(1) 算",
+        "code": "(r-l+1)*a[r] - sum",
+        "note": "把区间内每颗都补到 a[r]，总操作数就是这串。"
+      },
+      {
+        "name": "代价对 l 单调",
+        "code": "l 只右移",
+        "note": "固定 r，左端点越靠右代价越小；固定 l，右端点越靠右代价越大。所以每个 r 的最优 l 单调不减，双指针成立。"
+      }
+    ]
+  },
+  "partial": {
+    "note": "45 分是 O(n²) 的边界：前 9 个点 n 不超过 5000，枚举所有 [l,r] 用前缀和算代价就能过。",
+    "warning": "第 10 个点起 n 到 5×10⁵，O(n²) 是 2.5×10¹¹ 次，必死——从这里开始要排序 + 双指针。",
+    "subtasks": [
+      {
+        "range": "1~9",
+        "pts": 45,
+        "props": [],
+        "focus": "n ≤ 5000，可以枚举区间",
+        "how": "排序后枚举所有 [l,r]，用前缀和算出把它抬到 a[r] 的代价，取代价 ≤ m 的最长区间",
+        "branch": false
+      },
+      {
+        "range": "10~20",
+        "pts": 55,
+        "props": [],
+        "focus": "n 到 5×10⁵",
+        "how": "双指针：右端点右移、代价超了就左移，均摊 O(n)",
+        "branch": false
+      }
+    ]
+  },
+  "solution": {
+    "steps": [
+      "读入 a 并从小到大排序。",
+      "右端点 r 从左到右扫，用 sum 维护窗口 [l,r] 的和。",
+      "若当前代价 (r-l+1)*a[r]-sum 超过 m，就不断右移 l 并从 sum 里减掉 a[l]，直到代价 ≤ m。",
+      "每个 r 用 r-l+1 更新答案。"
+    ],
+    "correctness": "对任意方案，把所有选中元素抬到集合最大值 T 的代价是 Σ(T-a_i)；把 T 降到集合最大值只会让代价变小，所以最优方案一定是「一段区间抬到右端点」。固定 r 时，区间越长代价越大，且可行的最长左端点随 r 单调右移，因此双指针不会漏掉任何可行区间。",
+    "complexity": "排序 O(n log n)，双指针 O(n)，空间 O(n)。"
+  },
+  "code": "#include<bits/stdc++.h>\nusing namespace std;\n#define ll long long\nconst int N=5e5+5;\nint n;\nll m,a[N];\nint main(){\n    ios::sync_with_stdio(0);\n    cin.tie(0);\n    cin>>n>>m;\n    for(int i=1;i<=n;i++)cin>>a[i];\n    sort(a+1,a+n+1);\n    int ans=0,l=1;\n    ll sum=0;\n    for(int r=1;r<=n;r++){\n        sum+=a[r];\n        while(l<r&&(ll)(r-l+1)*a[r]-sum>m)sum-=a[l++];\n        ans=max(ans,r-l+1);\n    }\n    cout<<ans;\n    return 0;\n}",
+  "codeNote": "洛谷提交用这一版：标准输入输出，不要写 freopen。正式赛场要自己补 freopen，从 crystal.in 读、crystal.out 写。",
+  "pitfalls": [
+    {
+      "title": "答案不一定是一段前缀",
+      "severity": "高",
+      "desc": "例如 1,100,101，m=1：选前两个要 99 次，选后两个只要 1 次。最优是一段区间，不是前缀，必须用双指针而不是取前 k 个。"
+    },
+    {
+      "title": "代价用 int 存",
+      "severity": "高",
+      "desc": "n·|a_i| 可达 5×10¹⁷，sum 和代价都要 long long，乘法前先转 (ll)。"
+    },
+    {
+      "title": "去枚举目标值 T",
+      "severity": "中",
+      "desc": "T 可以取任意整数，但最优 T 一定等于某个 a_i；枚举 T 会 TLE，也没必要。"
+    },
+    {
+      "title": "左端点回退",
+      "severity": "中",
+      "desc": "双指针里 l 只能单调右移，写成每次从 1 重新找就退化成 O(n²)。"
+    },
+    {
+      "title": "提交版多了 freopen / 考场漏了 freopen",
+      "severity": "中",
+      "desc": "洛谷读标准输入，写了 freopen 会去读不存在的 crystal.in。"
+    }
+  ],
+  "tests": [
+    {
+      "name": "样例",
+      "input": "5 5\n1 2 4 8 9",
+      "expect": "3",
+      "why": "把 1、2 抬到 4"
+    },
+    {
+      "name": "只有一颗",
+      "input": "1 0\n5",
+      "expect": "1",
+      "why": "单颗不需要操作"
+    },
+    {
+      "name": "全相同",
+      "input": "4 0\n7 7 7 7",
+      "expect": "4",
+      "why": "本来就能一起合成"
+    },
+    {
+      "name": "负数",
+      "input": "3 10\n-5 -3 0",
+      "expect": "3",
+      "why": "抬到 0 花 8 次"
+    },
+    {
+      "name": "m=0",
+      "input": "5 0\n1 1 3 4 4",
+      "expect": "2",
+      "why": "只能选能量相同的"
+    },
+    {
+      "name": "m 很大",
+      "input": "4 100\n1 2 3 4",
+      "expect": "4",
+      "why": "全部抬到 4 只要 6 次"
+    }
+  ],
+  "statement": [
+    "小 R 有 n 颗能量水晶，第 i 颗能量值为整数 a_i。",
+    "他想用其中若干颗合成一颗大水晶，参与合成的水晶必须具有相同的能量值，并希望参与的水晶尽可能多。",
+    "他可以进行至多 m 次操作，每次任选一颗水晶把能量值 +1，同一颗可以重复选。",
+    "求最多能用多少颗水晶合成。",
+    "输入：从 crystal.in 读入，第一行 n, m，第二行 n 个整数 a_i。",
+    "输出：输出到 crystal.out，一个正整数。",
+    "数据范围：1 ≤ n ≤ 5×10^5，0 ≤ m ≤ 10^18，|a_i| ≤ 10^12。"
+  ]
+}

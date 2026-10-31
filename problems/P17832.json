@@ -1,0 +1,140 @@
+{
+  "id": "P17832",
+  "title": "地铁 / subway",
+  "contest": "CSP-S 2026",
+  "suffix": "民间数据",
+  "url": "https://www.luogu.com.cn/problem/P17832",
+  "fetchedAt": "2026-10-31",
+  "oneLiner": "只有走路花时间，换乘代价只跟「哪两条线路」有关——把线路当点建图，Floyd 一次，询问枚举两条线路。",
+  "summary": [
+    "B 市有 m 个地铁站、n 条线路。**只有走路花时间**：从地铁口下到站厅花 $w_v$；从站厅走到第 i 条线路的站台花 $t_{i,v}$；出站再花 $w_v$。坐车本身不计时。",
+    "换乘 = 从一条线路的站台走回站厅，再走到另一条线路的站台，在同一个站 v 花 $t_{i,v}+t_{j,v}$。",
+    "每条线路经过若干站，同一条线路上的任意两站可以直达，不用走路。每个站最多被 d 条线路经过（d ≤ 20）。",
+    "q 次询问：从 x 的地铁口到 y 的地铁口，最少走多少路。"
+  ],
+  "knowledge": [
+    "图论",
+    "最短路"
+  ],
+  "keyPoints": {
+    "title": "关键观察",
+    "items": [
+      {
+        "name": "只有换乘和进出站花时间",
+        "code": "w[x] + t + 换乘 + t + w[y]",
+        "note": "坐车不花时间，所以一次出行的代价只由「进了哪些线路、在哪换乘」决定。"
+      },
+      {
+        "name": "换乘代价只跟线路对有关",
+        "code": "t[i][v] + t[j][v]",
+        "note": "在站 v 从 i 换到 j 的走路时间，与从哪来、到哪去都无关。同一对线路可能在多个站相遇，取最小值。"
+      },
+      {
+        "name": "把线路当点建图",
+        "code": "i — j : min(t[i][v]+t[j][v])",
+        "note": "节点是线路，边权是最小换乘时间；同一条线路内部转移代价为 0。"
+      },
+      {
+        "name": "询问 = 枚举两条线路",
+        "code": "min(t[i][x] + dis[i][j] + t[j][y])",
+        "note": "枚举经过 x 的线路 i 与经过 y 的线路 j，中间用线路图最短路连接；由 d ≤ 20，每问最多 400 组。"
+      }
+    ]
+  },
+  "partial": {
+    "note": "24 分是暴力的边界：前 6 个点 n ≤ 50、q ≤ 200，直接对每次询问跑最短路就能过。",
+    "warning": "第 7 个点开始 q 到 10⁵，每次询问单独跑一次最短路会 TLE——必须预处理（Floyd 线路图）。",
+    "subtasks": [
+      {
+        "range": "1~6",
+        "pts": 24,
+        "props": [],
+        "focus": "n ≤ 50，q ≤ 200",
+        "how": "把「站点 + 线路站台」建成状态图，对每个询问跑一次 Dijkstra",
+        "branch": false
+      },
+      {
+        "range": "7~25",
+        "pts": 76,
+        "props": [],
+        "focus": "q 到 10⁵，n 到 500",
+        "how": "线路图 + Floyd 预处理，询问时枚举两条线路",
+        "branch": false
+      }
+    ]
+  },
+  "solution": {
+    "steps": [
+      "读入每个站的进站时间 w[v]，以及每条线路经过的站点和对应站台时间 t。",
+      "对每个站点维护「经过它的线路及 t」，用于计算换乘。",
+      "建线路图：同一站点上的两条线路 i、j 之间连边，边权 t_i(v)+t_j(v)；同一对线路取最小值。",
+      "在 n 个线路节点上跑 Floyd，得到 dis[i][j]：从线路 i 换到线路 j 的最少步行时间。",
+      "询问 (x,y)：枚举经过 x 的线路 i、经过 y 的线路 j，答案取 w[x]+w[y]+t_i(x)+dis[i][j]+t_j(y) 的最小值。"
+    ],
+    "correctness": "任何一条出行路线都能写成「进站 → 线路序列 → 出站」，步行时间恰好是 w_x + 各段站台时间 + 各次换乘时间 + w_y；而线路图上的一条路径正是按站点串联这些换乘，边权取下界不会更差。反过来，线路图的每条路径都能在对应站点实际换乘。因此最短路值就是最小步行时间。",
+    "complexity": "建图 O(Σk·d)，Floyd O(n³)，每次询问 O(d²)，空间 O(n² + Σk)。"
+  },
+  "code": "#include<bits/stdc++.h>\nusing namespace std;\n#define ll long long\nconst int N=5e5+5,M=505;\nconst ll INF=1e18;\nint c,n,m,d,q;\nint w[N];\nll dis[M][M],ans;\nvector<pair<int,int>> f[N];\n\nvoid read(int &x){\n    x=0;\n    char ch=getchar();\n    while(ch<'0'||ch>'9')ch=getchar();\n    while(ch>='0'&&ch<='9')x=x*10+(ch^48),ch=getchar();\n}\n\nint main(){\n    read(c);read(n);read(m);read(d);read(q);\n    for(int i=1;i<=m;i++)read(w[i]);\n    for(int i=1;i<=n;i++){\n        for(int j=1;j<=n;j++)dis[i][j]=(i==j?0:INF);\n        int k;\n        read(k);\n        for(int j=1;j<=k;j++){\n            int a,t;\n            read(a);read(t);\n            f[a].push_back({i,t});\n            for(int x=0;x<(int)f[a].size();x++){\n                int u=f[a][x].first;\n                dis[i][u]=dis[u][i]=min(dis[u][i],(ll)t+f[a][x].second);\n            }\n        }\n    }\n    // 线路图上 Floyd：dis[i][j] = 从线路 i 换到线路 j 的最少步行时间\n    for(int k=1;k<=n;k++)\n        for(int i=1;i<=n;i++)\n            for(int j=1;j<=n;j++)\n                dis[i][j]=min(dis[i][j],dis[i][k]+dis[k][j]);\n    while(q--){\n        int a,b;\n        read(a);read(b);\n        ans=INF;\n        for(int i=0;i<(int)f[a].size();i++)\n            for(int j=0;j<(int)f[b].size();j++){\n                auto p=f[a][i],r=f[b][j];\n                ans=min(ans,dis[p.first][r.first]+p.second+r.second+w[a]+w[b]);\n            }\n        printf(\"%lld\\n\",ans);\n    }\n    return 0;\n}",
+  "codeNote": "洛谷提交用这一版：标准输入输出，不要写 freopen。正式赛场要自己补 freopen，从 subway.in 读、subway.out 写。",
+  "pitfalls": [
+    {
+      "title": "把坐车时间算进去",
+      "severity": "高",
+      "desc": "题目只统计步行时间，乘坐线路本身不计时；建模时线路内部的边权是 0。"
+    },
+    {
+      "title": "换乘时多付了一次 w",
+      "severity": "高",
+      "desc": "换乘是「站台 → 站厅 → 另一条线路的站台」，只付两次 t，不付 w；w 只在进出站时算。把地铁口、站厅、站台混成一个点，换乘就会多算一次 w。"
+    },
+    {
+      "title": "在站点图上直接跑最短路",
+      "severity": "高",
+      "desc": "换乘代价依赖「从哪条线路换到哪条线路」，只记站点会丢失这个信息，答案偏小。"
+    },
+    {
+      "title": "同一对线路只记一个站",
+      "severity": "中",
+      "desc": "两条线路可能多个站相交，换乘代价要取所有交点里的最小值。"
+    },
+    {
+      "title": "忘记进出站的 w",
+      "severity": "中",
+      "desc": "起点和终点各要算一次 w，别只算站台时间。"
+    },
+    {
+      "title": "Floyd 前没把对角线置 0",
+      "severity": "中",
+      "desc": "dis[i][i]=0 表示同一条线路直达，不置 0 会把同线出行算贵。"
+    }
+  ],
+  "tests": [
+    {
+      "name": "单线直达",
+      "input": "0 1 2 20 1\n10 20\n2 1 5 2 7\n1 2",
+      "expect": "42",
+      "why": "w1+t+t+w2 = 10+5+7+20"
+    },
+    {
+      "name": "一次换乘",
+      "input": "0 2 3 20 1\n1 1 1\n2 1 1 2 1\n2 2 1 3 1\n1 3",
+      "expect": "6",
+      "why": "1+1+(1+1)+1+1"
+    },
+    {
+      "name": "同线多站",
+      "input": "0 1 3 20 1\n2 3 5\n3 1 1 2 2 3 3\n1 3",
+      "expect": "11",
+      "why": "2+1+3+5"
+    }
+  ],
+  "statement": [
+    "B 市共有 m 个地铁站。每个地铁站有站厅，地铁口与站厅之间有一条通道，从第 v 个地铁站的地铁口走到站厅需要 w_v 的时间。",
+    "共有 n 条地铁线路，第 i 条经过 k_i 个地铁站 a_{i,1}…a_{i,k_i}，在第 a_{i,j} 站从站厅走到第 i 条线路的站台需要 t_{i,j} 的时间，往返耗时相同。同一条线路不重复经过同一站。",
+    "每个地铁站最多有 d 条线路经过，地铁网络连通。",
+    "q 个出行计划，第 r 个从 x_r 的地铁口到 y_r 的地铁口，可以站内换乘；总步行时间为进出站与换乘的步行时间之和，求最小值。",
+    "输入：第一行 c,n,m,d,q；第二行 m 个 w_v；接下来 n 行，每行 1+2k_i 个数；接下来 q 行每行 x_r,y_r。",
+    "输出：q 行，每行一个整数。",
+    "数据范围：n ≤ 500，Σk_i ≤ 5×10^5，d ≤ 20，q ≤ 10^5，所有时间 ≤ 10^9。"
+  ]
+}

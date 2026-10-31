@@ -2,3 +2,4 @@ shots/
 tools/.tmp/
 *.exe
 .DS_Store
+problems/*.txt

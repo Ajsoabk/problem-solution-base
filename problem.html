@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>题解</title>
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%230f1720'/><text x='50' y='72' font-size='58' text-anchor='middle' fill='%235eead4' font-family='serif'>題</text></svg>">
+</head>
+<body data-page="problem">
+
+<header class="site-head">
+  <div class="wrap wide head-inner">
+    <a class="brand" href="index.html">題解</a>
+    <span class="pid" id="pid"></span>
+    <span class="crumb" id="crumb"></span>
+    <span class="spacer"></span>
+    <a class="ghost-link" id="srcLink" href="#" target="_blank" rel="noopener">洛谷原题 ↗</a>
+    <button class="icon-btn" id="btnTheme" title="切换深色 / 浅色" aria-label="切换主题">◐</button>
+  </div>
+</header>
+
+<main class="layout">
+
+  <aside class="toc" id="toc" aria-label="本页目录"></aside>
+
+  <div class="content">
+
+  <div class="hero">
+    <h1 id="title"></h1>
+  </div>
+
+  <section id="summary">
+    <h2>题意</h2>
+    <div id="summaryBody"></div>
+    <div id="figure"></div>
+    <div class="kline">
+      <span class="kline-label">知识点</span>
+      <div class="tags" id="tagRow"></div>
+    </div>
+  </section>
+
+  <section id="points">
+    <h2 id="pointsTitle"></h2>
+    <div id="pointsBody"></div>
+  </section>
+
+  <section id="partial" hidden>
+    <h2>部分分</h2>
+    <div id="partialBody"></div>
+  </section>
+
+  <section id="solution">
+    <h2>正解</h2>
+    <div id="solutionBody"></div>
+  </section>
+
+  <section id="code">
+    <h2>代码</h2>
+    <div id="codeBody"></div>
+  </section>
+
+  <section id="pitfalls">
+    <h2>易错点</h2>
+    <div id="pitfallBody"></div>
+  </section>
+
+  <details class="statement" id="statement">
+    <summary>题面原文</summary>
+    <div id="statementBody"></div>
+  </details>
+
+  <nav class="pager" id="pager"></nav>
+
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/common.js"></script>
+<script src="assets/problem.js"></script>
+</body>
+</html>

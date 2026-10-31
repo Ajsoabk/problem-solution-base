@@ -1,0 +1,178 @@
+{
+  "id": "P17828",
+  "title": "回文串 / string",
+  "contest": "CSP-J 2026",
+  "suffix": "民间数据",
+  "url": "https://www.luogu.com.cn/problem/P17828",
+  "fetchedAt": "2026-10-31",
+  "oneLiner": "S 太长不能展开，按段合并：每次把左右两段的重叠部分一起比，不同就整批改。",
+  "summary": [
+    "字符串 S 只含小写字母，但它不直接给你，而是给 n 段：第 i 段是 a_i 个字母 c_i，按顺序拼起来就是 S。",
+    "回文串指正着读、反着读一样的串，比如 aba、abba；aabbc 不是。",
+    "一次操作可以把任意一个字符改成任意小写字母，代价 1 次。问最少改多少个字符，能让 S 变成回文串。",
+    "例如 S = aabbc，把最后两个字符都改成 a，得到 aabaa，改 2 次。"
+  ],
+  "knowledge": [
+    "双指针",
+    "贪心"
+  ],
+  "keyPoints": {
+    "title": "关键观察",
+    "items": [
+      {
+        "name": "每对位置互不影响",
+        "code": "s[i] 与 s[L+1-i]",
+        "note": "位置 i 只和倒数第 i 个字符配对，改与不改不影响别的对，所以总代价就是每对代价之和。"
+      },
+      {
+        "name": "一对的代价只有 0 或 1",
+        "code": "c[l] == c[r] ? 0 : 1",
+        "note": "两个字符相同不用动；不同时必须改其中一个，改一个就够。"
+      },
+      {
+        "name": "按段一次算一批",
+        "code": "minn = min(x, y)",
+        "note": "左右两段能对齐 minn 对，字符不同就把 minn 一起加进答案，不用逐个字符走。"
+      },
+      {
+        "name": "中间剩下的不用管",
+        "code": "l == r 时停",
+        "note": "只剩一段时，它是自己和自己配对，怎么改都不影响答案。"
+      }
+    ]
+  },
+  "partial": {
+    "note": "56 分是保底：只要 L 不超过 2×10^5，把字符串展开逐位比就能过一半以上的点。",
+    "warning": "13~16 号点 n 只有 2000，但 a_i 到 10^9 —— 展开成字符串会直接爆掉，这里就是分水岭。",
+    "subtasks": [
+      {
+        "range": "1~12、17~18",
+        "pts": 56,
+        "props": [],
+        "focus": "L 最多 2×10^5，可以展开",
+        "how": "按段重复 a_i 次拼出 S，再逐位比 `s[i]` 与 `s[L+1-i]`，不同就 +1",
+        "branch": false
+      },
+      {
+        "range": "13~16、19~25",
+        "pts": 44,
+        "props": [],
+        "focus": "a_i 到 10^9，L 到 2×10^14",
+        "how": "按段双指针：每次处理 `min(a_l, a_r)` 对，字符不同就整批计入答案",
+        "branch": false
+      }
+    ]
+  },
+  "solution": {
+    "steps": [
+      "读入 n 组 (a_i, c_i)，a_i 用 long long。",
+      "双指针 l = 1、r = n，x = a[l]、y = a[r] 表示左右两段各还剩多少字符。",
+      "每次取 minn = min(x, y)：若 c[l] ≠ c[r]，这 minn 对每对都要改一个，ans += minn。",
+      "x、y 各减去 minn；谁先到 0，就把那一边的指针往中间挪一段，补上新的 x 或 y。",
+      "l 与 r 相遇时停止：中间剩下的那段自己和自己配对，不用改。",
+      "输出 ans。"
+    ],
+    "correctness": "每一对 (i, L+1−i) 只依赖这两个位置，改法互不影响，所以总代价等于各对代价之和。字符相同代价 0，不同代价 1。按段合并只是把这 L/2 对分成若干批一次算完，不改变任何一对的结论，因此答案正确。",
+    "complexity": "时间 O(n)：每一轮至少消耗掉左右两段中的一段，最多 2n 轮。空间 O(n)：存 a 和 c。"
+  },
+  "code": "#include <bits/stdc++.h>\nusing namespace std;\n\nlong long n, a[200005];\nchar c[200005];\n\nint main() {\n    ios::sync_with_stdio(0);\n    cin.tie(0);\n\n    cin >> n;\n    for (int i = 1; i <= n; i++) cin >> a[i] >> c[i];\n\n    // 从两端往中间合并：x、y 是当前左右两段还剩多少个字符\n    long long l = 1, r = n, ans = 0, x = a[l], y = a[r];\n    while (l < r) {\n        long long minn = min(x, y);      // 这一次能对齐 minn 对\n        if (c[l] != c[r]) ans += minn;   // 字符不同，这 minn 对每对都要改一个\n        x -= minn;\n        y -= minn;\n        if (x == 0) { l++; x = a[l]; }   // 左边这段用完，换下一段\n        if (y == 0) { r--; y = a[r]; }   // 右边同理\n    }\n    cout << ans;\n    return 0;\n}",
+  "codeNote": "洛谷提交用这一版：标准输入输出，不要写 freopen。正式赛（CSP-J 考场）要自己补上两行 freopen，从 string.in 读、string.out 写。",
+  "pitfalls": [
+    {
+      "title": "ans 会超过 int",
+      "severity": "高",
+      "desc": "最坏 L/2 ≈ 10^14，ans 必须 long long；a_i 也要 long long，别为了省事用 int。"
+    },
+    {
+      "title": "只比段首，忘了整段",
+      "severity": "中",
+      "desc": "看到 c[l] ≠ c[r] 只加 1 是错的：这一次对齐的是 min(a_l, a_r) 对，每对都要改，要加 min(a_l, a_r)。"
+    },
+    {
+      "title": "中间那段也算了代价",
+      "severity": "中",
+      "desc": "l == r 时只剩一段，它是自己和自己配对，代价一定是 0。循环条件写 l < r 就是为了避开它。"
+    },
+    {
+      "title": "以为要真的把字符串建出来",
+      "severity": "中",
+      "desc": "a_i 到 10^9 时 S 长度可达 2×10^14，任何按字符处理的做法都会超时或爆内存。"
+    },
+    {
+      "title": "提交版多了 freopen / 考场漏了 freopen",
+      "severity": "中",
+      "desc": "洛谷读标准输入，写了 freopen 会去读不存在的 string.in；CSP-J 考场反过来，不写读不到数据。"
+    }
+  ],
+  "tests": [
+    {
+      "name": "样例 1",
+      "input": "3\n2 a\n2 b\n1 c",
+      "expect": "2",
+      "why": "aabbc → aabaa"
+    },
+    {
+      "name": "样例 2",
+      "input": "2\n2 a\n3 a",
+      "expect": "0",
+      "why": "aaaaa 已经是回文"
+    },
+    {
+      "name": "只有一段",
+      "input": "1\n5 a",
+      "expect": "0",
+      "why": "单段必然回文"
+    },
+    {
+      "name": "两段不同",
+      "input": "2\n1 a\n1 b",
+      "expect": "1",
+      "why": "ab 改一个"
+    },
+    {
+      "name": "已经回文",
+      "input": "3\n1 a\n1 b\n1 a",
+      "expect": "0",
+      "why": "aba"
+    },
+    {
+      "name": "三段全不同",
+      "input": "3\n1 a\n1 b\n1 c",
+      "expect": "1",
+      "why": "abc 改一个变 abc 的对称"
+    },
+    {
+      "name": "段长不等但对称",
+      "input": "4\n2 a\n1 b\n2 a",
+      "expect": "0",
+      "why": "aabaa"
+    },
+    {
+      "name": "长度不等",
+      "input": "2\n3 a\n1 b",
+      "expect": "1",
+      "why": "aaab：a-b 一对，a-a 一对"
+    },
+    {
+      "name": "大数字",
+      "input": "2\n1000000000 a\n1000000000 b",
+      "expect": "1000000000",
+      "why": "ans 要 long long"
+    },
+    {
+      "name": "大段夹小段",
+      "input": "3\n1000000000 a\n1 b\n1000000000 c",
+      "expect": "1000000000",
+      "why": "a 与 c 全改，中间 b 不用管"
+    }
+  ],
+  "statement": [
+    "小 R 有一个长度为 L 的字符串 S，只包含小写英文字母。S 可以分成 n 个连续的段，第 i 段由 a_i 个小写字母 c_i 构成，L = Σa_i。",
+    "小 X 喜欢回文串：反转后与原串相同，例如 aba、abba；aabbc 不是。",
+    "小 R 可以把 S 中任意一个位置的字符改成任意小写英文字母，希望用尽量少的修改满足要求。",
+    "求最少需要修改多少个位置，才能把 S 改成回文串。",
+    "输入：从 string.in 读入，第一行 n，接下来 n 行每行一个正整数 a_i 和一个小写字母 c_i。",
+    "输出：输出到 string.out，一个整数，表示最少修改次数。",
+    "数据范围：1 ≤ n ≤ 2×10^5，1 ≤ a_i ≤ 10^9，c_i 为小写英文字母。"
+  ]
+}

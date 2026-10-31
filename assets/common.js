@@ -8,11 +8,28 @@ window.PA = (function () {
   const esc = (s) =>
     String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  // 行内：`code` 与 **bold**
-  const md = (s) =>
-    esc(s)
-      .replace(/`([^`]+)`/g, "<code>$1</code>")
-      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  // 行内公式：a_i → a<sub>i</sub>，2^30 → 2<sup>30</sup>，10^5 同理。
+  // 只处理正文，反引号里的代码原样保留。
+  const MATH = [
+    [/([A-Za-z0-9]+)_\{([^}]+)\}/g, "$1<sub>$2</sub>"],
+    [/([A-Za-z]+)_([A-Za-z0-9]+)/g, "$1<sub>$2</sub>"],
+    [/([A-Za-z0-9]+)\^\{([^}]+)\}/g, "$1<sup>$2</sup>"],
+    [/([A-Za-z0-9]+)\^([A-Za-z0-9]+)/g, "$1<sup>$2</sup>"],
+  ];
+  const mathify = (t) => MATH.reduce((s, [re, rep]) => s.replace(re, rep), t);
+
+  // 行内：`code`、**bold**、简单公式
+  function md(s) {
+    return String(s)
+      .split(/(`[^`]+`)/)
+      .map((part) => {
+        if (part.length > 1 && part.startsWith("`") && part.endsWith("`")) {
+          return "<code>" + esc(part.slice(1, -1)) + "</code>";
+        }
+        return mathify(esc(part).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"));
+      })
+      .join("");
+  }
 
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },

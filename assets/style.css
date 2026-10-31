@@ -149,6 +149,11 @@ section h2 {
 p { margin: 0 0 14px; color: var(--text-2); }
 strong { color: var(--text); font-weight: 600; }
 
+/* 行内公式的上下标：不影响行高 */
+sub, sup { font-size: .74em; line-height: 0; position: relative; vertical-align: baseline; }
+sup { top: -.5em; }
+sub { bottom: -.25em; }
+
 p code, li code, td code, .ex-row code {
   font-size: .88em;
   padding: 1px 5px;

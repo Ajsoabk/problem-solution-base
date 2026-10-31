@@ -5,7 +5,7 @@
   "suffix": "民间数据",
   "url": "https://www.luogu.com.cn/problem/P17834",
   "fetchedAt": "2026-10-31",
-  "oneLiner": "二分半径 r；剥掉 r 层叶子后剩下的「核心」是连通的，且整棵树都在它的 r 邻域里——问题变成从核心的一条链上删一段。",
+  "oneLiner": "二分半径 r，剥掉 r 轮叶子剩下的核心连通、且覆盖全树；核心叶子必须选，于是问题变成「在一条链上删掉连续的一段」。",
   "summary": [
     "给一棵 n 个点的树，选恰好 k 个点，要求它们在树上形成**不超过 2 个连通块**。",
     "方案的「通勤半径」= 所有点到选中点的最大距离，求所有合法方案里这个最大值的最小值。",
@@ -25,19 +25,24 @@
         "note": "半径越小越难满足，单调，所以二分答案；check 只回答「半径 r 是否可行」。"
       },
       {
-        "name": "剥叶子得到核心",
+        "name": "剥 r 轮叶子得到核心",
         "code": "lvl[v] ≥ r+1",
-        "note": "把叶子一层层剥掉，lvl 是第几轮被剥掉；lvl ≥ r+1 的点组成核心。核心连通，而且每个点到核心的距离都不超过 r。"
+        "note": "核心 C 连通，而且每个点到 C 的距离都不超过 r，所以 |C| ≤ k 时直接选核心即可。"
       },
       {
-        "name": "核心点数 ≤ k 就可行",
-        "code": "cnt ≤ k → true",
-        "note": "选整个核心就已经覆盖全树；核心连通，再往旁边补点也不会拆成两块。"
+        "name": "核心叶子必须选",
+        "code": "悬挂深度 = r",
+        "note": "核心叶子上挂着的那部分，最深处离它正好 r 步；不选它，这段就没人能在 r 步内覆盖。"
       },
       {
-        "name": "否则要从核心删点",
-        "code": "needDel = cnt − k",
-        "note": "删掉的点必须被保留的点在 r 步内覆盖；删的必须是一段连续区间（否则碎成 3 块以上），分叉点不能删——所以只能在核心的「链」上删。"
+        "name": "只能在一条链上删连续一段",
+        "code": "D = |C| − k",
+        "note": "漏选分叉点、或者删成两段，都会把核心切成 ≥3 块，违反「不超过两个连通块」；所以是从某条链上删掉连续 D 个点，两端保留。"
+      },
+      {
+        "name": "可删的判定",
+        "code": "min(i−L, L+D+1−i) ≤ r − h_i",
+        "note": "删掉 L+1…L+D 后，被删点 i 到最近保留点的距离是 min(i−L, L+D+1−i)；它的悬挂深度是 h_i，能被覆盖当且仅当这个距离 ≤ r−h_i。反过来就是一条关于 L 的区间，用差分判。"
       }
     ]
   },
@@ -65,15 +70,14 @@
   },
   "solution": {
     "steps": [
-      "读入所有边，建 CSR 图。",
-      "剥叶子：按轮次给每个点标 lvl，并把点按层号排好，记下每层的起点 lvStart。",
-      "对每个点记下邻居中层号最大的两个（沿链走的方向）和第三大的层号（判断是不是分叉点）。",
-      "求出每个点的「挂枝深度」：先算子树深度，再用换根 DP 补上「向上的那一支」。",
-      "二分 r：check(r) 数出核心点数 cnt。cnt ≤ k 直接可行；需要删的点数 cnt−k > 2r 直接不可行（一段可删区间两边各要一个 r 内的保留点）。",
-      "否则沿每条核心链走一遍，用 calc 算这条链上最长能删多长的一段；只要有一条链 ≥ cnt−k 就可行。",
+      "建图（CSR），剥叶子分层：lvl[v] 是第几轮被剥掉，按层排好并记下每层起点。",
+      "对每个点取邻居 lvl 的前三大 t1≥t2≥t3：满足 t2 > r ≥ t3 的点在链内，它的悬挂深度 h_i = t3。",
+      "求每个点的挂枝深度：子树深度 dn，再换根求出向上的 upv。",
+      "二分 r。check(r) 先数核心点数 cnt：cnt ≤ k 直接可行；要删的 D = cnt−k > 2r 直接不可行（一段可删区间两边各要一个保留点）。",
+      "否则沿每条核心链扫一遍：把「删 L+1…L+D 后第 i 个点覆盖不到」写成关于 L 的区间，用差分/指针维护，若存在某个 L 让所有被删点都能覆盖，就可行。",
       "二分出最小 r 输出。"
     ],
-    "correctness": "剥离叶子每轮去掉一层，所以 lvl ≥ r+1 的点构成一棵连通的子树（核心），并且任何一个点在 r 步内都能走到核心——这两条保证了「选核心」一定覆盖全树。当 k 不够选满核心时，只能从核心里删点；删一个点会让核心断开，要维持不超过 2 块，删掉的必须是一段连续的链（分叉点一删就断成三块以上）。被删的每个点又必须在某个保留点的 r 邻域内，于是问题化为「在链上找最长的一段，使段内每个点都有保留点在它的 r 邻域内」，calc 用区间覆盖求这个最长段；总和够 cnt−k 就说明半径 r 可行。",
+    "correctness": "剥叶子每轮去掉一层，lvl ≥ r+1 的点构成连通的子树 C，并且任何点在 r 步内都能到达 C——所以 |C| ≤ k 时选 C 一定可行。核心叶子挂着的那部分最深正好 r 步，不选它就没法覆盖，因此两端必须保留；而漏选分叉点或删成两段都会把核心切成 ≥3 块，所以只能删一条链上的连续一段。对段内每个点 i，它到最近保留点的距离是 min(i−L, L+D+1−i)，加上悬挂深度 h_i 要 ≤ r，等价于一个关于 L 的区间；这些区间都不覆盖某个 L，就说明删这一段可行。D > 2r 时显然不可行。",
     "complexity": "每次 check O(n)（每条链只走一遍，用时间戳去重），二分 O(log n)，总 O(n log n)；空间 O(n)。"
   },
   "code": "#include<bits/stdc++.h>\nusing namespace std;\nconst int N=1000005;\nint n,K;\nint st[N],adj[2*N],eu[N],ev[N];\nint lvl[N],lvlO[N],lvStart[N];        // 剥叶子的层号、按层排好的点、每层起点\nint par[N],que[N],dn[N],upv[N];\nint two[N],three[N],id1[N],id2[N];    // 邻居层号的第二大/第三大，以及最大的两个邻居\nint nd[N],hd[N],nx[N],mk[N];\nint stamp;\n\n// 一条链上最多能删掉几个点。hl、hr：链两端外面还有没有分叉点接着\nint calc(int len,int hl,int hr){\n    int best=0;\n    int hi=hr?len:len-1;\n    for(int t=1;t<=len+1;t++)hd[t]=0;\n    for(int p=1;p<=len;p++){\n        int a=p-nd[p]+1;\n        if(a<1)a=1;\n        nx[p]=hd[a];\n        hd[a]=p;\n    }\n    int mn=len+5;\n    for(int i=len;i>=1;i--){\n        for(int p=hd[i+1];p;p=nx[p]){\n            int b=p+nd[p]-1;\n            if(b<mn)mn=b;\n        }\n        if(i==1&&!hl)break;\n        int j=hi<mn?hi:mn;\n        if(j>=i&&j-i+1>best)best=j-i+1;\n    }\n    if(!hr){\n        int mx=0;\n        for(int i=len;i>=1;i--){\n            int a=i-nd[i]+1;\n            if(a>mx)mx=a;\n            if(mx<=i&&len-i+1>best)best=len-i+1;\n        }\n    }\n    if(!hl){\n        int mnb=len+5;\n        for(int j=1;j<=len;j++){\n            int b=j+nd[j]-1;\n            if(b<mnb)mnb=b;\n            if(mnb>=j&&j>best)best=j;\n        }\n    }\n    return best;\n}\n\nbool check(int r){\n    int from=lvStart[r+1];\n    int cnt=n-from;                 // 核心点数\n    if(cnt<=K)return true;\n    int needDel=cnt-K;              // 必须从核心删掉的点数\n    if(needDel>2*r)return false;\n    int lim=r+1;\n    stamp++;\n    int mxp=0;\n    for(int idx=from;idx<n;idx++){\n        int u=lvlO[idx];\n        if(mk[u]==stamp)continue;\n        int c1;\n        if(three[u]>=lim)c1=3;\n        else if(two[u]>=lim)c1=2;\n        else c1=1;\n        if(c1==3)continue;          // 分叉点不能删\n        if(c1==2&&three[id1[u]]<lim&&three[id2[u]]<lim)continue;\n        // 从链端出发走完整条链，顺手算出每个点能删多少\n        int len=0,pre=0,cur=u,hl=0,hr=0;\n        while(cur){\n            int c2=(three[cur]>=lim)?3:(two[cur]>=lim?2:1);\n            int a=id1[cur],b=(c2>=2)?id2[cur]:0;\n            int f=0,pu=par[cur];\n            for(int e=st[cur];e<st[cur+1];e++){\n                int v=adj[e];\n                if(v==a||v==b)continue;\n                int h=(v==pu?upv[cur]:dn[v])+1;\n                if(h>f)f=h;\n            }\n            int need=r-f;\n            nd[++len]=need>0?need:0;\n            mk[cur]=stamp;\n            int nxt=0,anc=0;\n            if(three[a]>=lim)anc=1;\n            else if(a!=pre)nxt=a;\n            if(b&&three[b]>=lim)anc=1;\n            else if(b&&b!=pre&&!nxt)nxt=b;\n            if(len==1)hl=anc;\n            hr=anc;\n            pre=cur;\n            cur=nxt;\n        }\n        int got=calc(len,hl,hr);\n        if(got>mxp){\n            mxp=got;\n            if(mxp>=needDel)return true;\n        }\n    }\n    return mxp>=needDel;\n}\n\nint main(){\n    ios::sync_with_stdio(0);\n    cin.tie(0);\n    int c,T;\n    cin>>c>>T;\n    while(T--){\n        cin>>n>>K;\n        for(int i=1;i<n;i++)cin>>eu[i]>>ev[i];\n        if(K>=n){cout<<0<<'\\n';continue;}\n        if(K==n-1){cout<<1<<'\\n';continue;}\n        // 一、建图（CSR）\n        for(int i=1;i<=n;i++){st[i]=0;lvl[i]=0;}\n        st[n+1]=0;\n        for(int i=1;i<n;i++){st[eu[i]]++;st[ev[i]]++;}\n        int s=0;\n        for(int i=1;i<=n;i++){int d=st[i];st[i]=s;s+=d;}\n        st[n+1]=s;\n        for(int i=1;i<=n;i++)que[i]=st[i];\n        for(int i=1;i<n;i++){\n            adj[que[eu[i]]++]=ev[i];\n            adj[que[ev[i]]++]=eu[i];\n        }\n        // 二、剥叶子分层\n        for(int i=1;i<=n;i++)dn[i]=st[i+1]-st[i];\n        int t=0;\n        for(int i=1;i<=n;i++)\n            if(dn[i]<=1){lvlO[t++]=i;lvl[i]=1;}\n        int h=0,lev=1;\n        lvStart[1]=0;\n        while(h<t){\n            int e2=t;\n            while(h<e2){\n                int u=lvlO[h++];\n                for(int e=st[u];e<st[u+1];e++){\n                    int v=adj[e];\n                    if(lvl[v]==0&&--dn[v]==1){lvl[v]=lev+1;lvlO[t++]=v;}\n                }\n            }\n            lev++;\n            lvStart[lev]=e2;\n        }\n        int maxLev=lev-1;\n        // 三、每个点记邻居层号的最大/次大/第三大\n        for(int u=1;u<=n;u++){\n            int L1=0,L2=0,L3=0,i1=0,i2=0;\n            for(int e=st[u];e<st[u+1];e++){\n                int v=adj[e],L=lvl[v];\n                if(L>=L1){L3=L2;L2=L1;L1=L;i2=i1;i1=v;}\n                else if(L>=L2){L3=L2;L2=L;i2=v;}\n                else if(L>L3){L3=L;}\n            }\n            two[u]=L2;three[u]=L3;id1[u]=i1;id2[u]=i2;\n        }\n        // 四、挂枝深度：先子树深度，再从上往下推向上的深度\n        for(int i=1;i<=n;i++)dn[i]=0;\n        int qt=0;\n        que[qt++]=1;par[1]=0;\n        for(int i=0;i<qt;i++){\n            int u=que[i];\n            for(int e=st[u];e<st[u+1];e++){\n                int v=adj[e];\n                if(v!=par[u]){par[v]=u;que[qt++]=v;}\n            }\n        }\n        for(int i=n-1;i>=1;i--){\n            int u=que[i];\n            if(dn[u]+1>dn[par[u]])dn[par[u]]=dn[u]+1;\n        }\n        upv[1]=0;\n        for(int i=0;i<n;i++){\n            int u=que[i];\n            int m1=0,m2=0,who=0;\n            for(int e=st[u];e<st[u+1];e++){\n                int v=adj[e];\n                if(v==par[u])continue;\n                int val=dn[v]+1;\n                if(val>m1){m2=m1;m1=val;who=v;}\n                else if(val>m2)m2=val;\n            }\n            for(int e=st[u];e<st[u+1];e++){\n                int v=adj[e];\n                if(v==par[u])continue;\n                int other=(v==who)?m2:m1;\n                int best=upv[u]>other?upv[u]:other;\n                upv[v]=best+1;\n            }\n        }\n        // 五、二分答案\n        int lo=0,hi=maxLev;\n        for(int r=0;r<=maxLev;r++)\n            if(n-lvStart[r+1]<=K){hi=r;break;}\n        for(int r=0;r<=hi;r++)\n            if(n-lvStart[r+1]<=K+2*r){lo=r;break;}\n        int ans;\n        if(check(lo))ans=lo;\n        else{\n            int h2=hi;\n            lo++;\n            while(lo<h2){\n                int mid=(lo+h2)>>1;\n                if(check(mid))h2=mid;\n                else lo=mid+1;\n            }\n            ans=lo;\n        }\n        cout<<ans<<'\\n';\n    }\n    return 0;\n}",
@@ -83,6 +87,11 @@
       "title": "忘了 k = n 和 k = n−1 的特判",
       "severity": "高",
       "desc": "k=n 时半径 0；k=n−1 时半径 1。这两个边界不特判，核心逻辑会算错。"
+    },
+    {
+      "title": "漏掉「核心叶子必须选」",
+      "severity": "高",
+      "desc": "核心叶子的悬挂部分最深处正好 r 步，只有它自己能覆盖；把它一起删掉，depth=r 的那段就没人管了。"
     },
     {
       "title": "把分叉点也删了",
@@ -103,6 +112,11 @@
       "title": "n 到 10⁶ 还开着 cin 同步",
       "severity": "中",
       "desc": "必须 ios::sync_with_stdio(0)，否则读入就超时。"
+    },
+    {
+      "title": "把 h_i 当成「子树深度」",
+      "severity": "中",
+      "desc": "h_i 是挂在链上的那部分的最大深度，等于邻居 lvl 的第三大 t3（前两大是链的方向）。用子树深度会把链的方向也算进去，导致可删段算短。"
     }
   ],
   "tests": [

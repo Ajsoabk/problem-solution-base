@@ -18,14 +18,16 @@ window.PA = (function () {
   ];
   const mathify = (t) => MATH.reduce((s, [re, rep]) => s.replace(re, rep), t);
 
-  // 行内：`code`、**bold**、简单公式
+  // 行内：`code`、**bold**、$公式$、简单上下标
+  // $...$ 原样交给 KaTeX（这里的切分保证公式里的 \sum_{i=1}^{n} 不被上下标规则改写）
   function md(s) {
     return String(s)
-      .split(/(`[^`]+`)/)
+      .split(/(`[^`]+`|\$\$[\s\S]*?\$\$|\$[^$\n]+\$)/)
       .map((part) => {
         if (part.length > 1 && part.startsWith("`") && part.endsWith("`")) {
           return "<code>" + esc(part.slice(1, -1)) + "</code>";
         }
+        if (part.startsWith("$")) return esc(part);
         return mathify(esc(part).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"));
       })
       .join("");

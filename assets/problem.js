@@ -223,5 +223,16 @@
   window.addEventListener("resize", syncToc);
   syncToc();
 
+  /* ---------------- 公式（KaTeX） ---------------- */
+  if (window.renderMathInElement) {
+    renderMathInElement(document.querySelector("main"), {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false },
+      ],
+      throwOnError: false,
+    });
+  }
+
   initTheme();
 })();

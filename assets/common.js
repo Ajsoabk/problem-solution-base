@@ -7,7 +7,7 @@ window.PA = (function () {
 
   // ===== 反馈入口：把腾讯问卷 / 金数据的链接填在这里，右上角按钮会自动出现 =====
   // 例：const FEEDBACK_URL = "https://wj.qq.com/s2/12345678/abcd/";
-  const FEEDBACK_URL = "";
+  const FEEDBACK_URL = "https://wj.qq.com/s2/28481049/npmv/";
 
   function mountFeedback() {
     const links = document.querySelectorAll("[data-feedback]");

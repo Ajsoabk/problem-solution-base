@@ -5,6 +5,23 @@
 window.PA = (function () {
   "use strict";
 
+  // ===== 反馈入口：把腾讯问卷 / 金数据的链接填在这里，右上角按钮会自动出现 =====
+  // 例：const FEEDBACK_URL = "https://wj.qq.com/s2/12345678/abcd/";
+  const FEEDBACK_URL = "";
+
+  function mountFeedback() {
+    const links = document.querySelectorAll("[data-feedback]");
+    if (!links.length) return;
+    if (!FEEDBACK_URL) {
+      links.forEach((a) => a.remove());
+      return;
+    }
+    links.forEach((a) => {
+      a.href = FEEDBACK_URL;
+      a.hidden = false;
+    });
+  }
+
   const esc = (s) =>
     String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -61,6 +78,8 @@ window.PA = (function () {
     clearTimeout(timer);
     timer = setTimeout(() => el.classList.remove("show"), 1600);
   }
+
+  mountFeedback();
 
   return { esc, md, initTheme, toast };
 })();

@@ -3,3 +3,10 @@ tools/.tmp/
 *.exe
 .DS_Store
 problems/*.txt
+
+# 后台运行期文件（本机配置 / 网关 token）
+admin/settings.json
+admin/gateway-token.txt
+
+# Windows 文件权限修复记录（本机）
+.acl-recovery/

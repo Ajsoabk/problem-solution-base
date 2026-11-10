@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>题解后台</title>
+<link rel="stylesheet" href="admin.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563eb'/><text x='50' y='72' font-size='58' text-anchor='middle' fill='%23fff' font-family='serif'>題</text></svg>">
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="logo">題</span>
+      <span class="brand-text"><b>题解后台</b><small>Problem Admin</small></span>
+    </div>
+
+    <nav class="nav" aria-label="后台导航">
+      <button class="nav-item active" data-view="list"><span class="ni">▤</span>题目管理</button>
+      <button class="nav-item" data-view="ai"><span class="ni">✦</span>AI 生成</button>
+      <button class="nav-item" data-view="rules"><span class="ni">≡</span>写作规范</button>
+      <button class="nav-item" data-view="settings"><span class="ni">⚙</span>设置</button>
+    </nav>
+
+    <div class="side-foot">
+      <div class="gw-line"><span class="dot" id="sideDot"></span><span id="sideGateway">网关检测中…</span></div>
+      <small>仅本机 · 127.0.0.1</small>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <header class="topbar">
+      <div class="top-title">
+        <h1 id="viewTitle">题目管理</h1>
+        <p id="viewSub">编辑题解、生成内容、管理题库</p>
+      </div>
+      <div class="top-actions">
+        <span class="pill" id="gwPill"><span class="dot"></span>网关检测中</span>
+        <a class="btn ghost" href="../index.html" target="_blank" rel="noopener">查看前台 ↗</a>
+      </div>
+    </header>
+
+    <!-- ================= 列表 ================= -->
+    <section class="view" id="view-list">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2>题库 <span class="count" id="listCount"></span></h2>
+            <p>所有内容来自 <code>problems/*.json</code>，保存后自动重新打包。</p>
+          </div>
+          <div class="row">
+            <button class="btn" id="btnBuild">重新打包</button>
+            <button class="btn primary" id="btnNew">+ 新建题目</button>
+          </div>
+        </div>
+
+        <div class="build-bar" id="buildBar" hidden></div>
+
+        <div class="toolbar">
+          <input class="input search" id="listSearch" type="search" placeholder="搜索题号 / 题目 / 知识点" autocomplete="off">
+        </div>
+
+        <div class="table-wrap">
+          <table class="ptable">
+            <thead>
+              <tr>
+                <th style="width:96px">题号</th>
+                <th>题目</th>
+                <th style="width:230px">知识点</th>
+                <th style="width:130px">更新时间</th>
+                <th style="width:210px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="listBody"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="listEmpty" hidden>没有匹配的题目。</p>
+      </div>
+    </section>
+
+    <!-- ================= 编辑器 ================= -->
+    <section class="view" id="view-editor" hidden>
+      <div class="editor-head">
+        <button class="btn ghost" id="btnBack">← 返回列表</button>
+        <span class="editor-id mono" id="editorIdLabel"></span>
+        <span class="spacer"></span>
+        <button class="btn" id="btnValidate">校验</button>
+        <button class="btn" id="btnPreview">预览 ↗</button>
+        <button class="btn danger ghost" id="btnDelete">删除</button>
+        <button class="btn primary" id="btnSave">保存并发布</button>
+      </div>
+
+      <div class="alert error" id="editorErrors" hidden></div>
+      <div class="alert ok" id="editorOk" hidden></div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="form">表单</button>
+        <button class="tab" data-tab="json">JSON</button>
+        <span class="spacer"></span>
+        <span class="hint" id="dirtyHint" hidden>● 有未保存的改动</span>
+      </div>
+
+      <form id="editorForm" autocomplete="off" novalidate>
+
+        <div class="card">
+          <div class="card-head"><div><h2>基本信息</h2><p>题号、标题与页面顶栏信息</p></div></div>
+          <div class="form-grid">
+            <label class="field"><span>题号 <em>必填</em></span><input class="input mono" id="fId" placeholder="P12345"></label>
+            <label class="field"><span>题目名 <em>必填</em></span><input class="input" id="fTitle" placeholder="旅游 / travel"></label>
+            <label class="field"><span>比赛</span><input class="input" id="fContest" placeholder="CSP-J 2026"></label>
+            <label class="field"><span>后缀</span><input class="input" id="fSuffix" placeholder="民间数据"></label>
+            <label class="field"><span>原题链接</span><input class="input" id="fUrl" placeholder="https://www.luogu.com.cn/problem/P12345"></label>
+            <label class="field"><span>抓取日期</span><input class="input" id="fFetchedAt" placeholder="2026-11-10"></label>
+            <label class="field"><span>时空限制</span><input class="input" id="fLimits" placeholder="1 s / 256 MB"></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>题意与知识点</h2><p>没看过原题的人能复述题目</p></div></div>
+          <label class="field"><span>一句话结论 <em>必填</em></span><input class="input" id="fOneLiner" placeholder="按顺序判四个问题，前一个不成立后面就是 0。"></label>
+          <label class="field"><span>题意 <em>每行一段</em></span><textarea class="textarea" id="fSummary" rows="5" placeholder="第一段…&#10;第二段…"></textarea></label>
+          <label class="field"><span>知识点 <em>逗号分隔，2~4 个</em></span><input class="input" id="fKnowledge" placeholder="分支结构，字符串"></label>
+
+          <label class="check"><input type="checkbox" id="fFigureOn"> 加一张纯文本示意图</label>
+          <div id="figureBody" hidden>
+            <div class="form-grid">
+              <label class="field"><span>示意图 <em>每行一行</em></span><textarea class="textarea mono" id="fFigureLines" rows="4" placeholder=" A   B   C  |  D   F"></textarea></label>
+              <label class="field"><span>图注</span><textarea class="textarea" id="fFigureNote" rows="4" placeholder="C 与 D 之间是过道。"></textarea></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h2>关键结论</h2><p>2~5 条，每条讲清「为什么」</p></div>
+            <button class="btn small" type="button" id="btnAddKp">+ 添加一条</button>
+          </div>
+          <label class="field"><span>小标题</span><input class="input" id="fKpTitle" placeholder="四个判断"></label>
+          <div class="rows" id="kpRows"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>部分分</h2><p>只有题面给出测试点表时才需要</p></div></div>
+          <label class="check"><input type="checkbox" id="fPartialOn"> 本题有测试点 / 子任务表</label>
+          <div id="partialBody" hidden>
+            <div class="form-grid">
+              <label class="field"><span>总览</span><textarea class="textarea" id="fPartialNote" rows="2"></textarea></label>
+              <label class="field"><span>策略提醒</span><textarea class="textarea" id="fPartialWarning" rows="2"></textarea></label>
+            </div>
+            <div class="rows" id="subRows"></div>
+            <button class="btn small" type="button" id="btnAddSub">+ 添加一档</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>正解</h2><p>简单题只写步骤，别硬套白话版和复杂度</p></div></div>
+          <label class="field"><span>步骤 <em>每行一步，3~6 步</em></span><textarea class="textarea" id="fSteps" rows="6"></textarea></label>
+
+          <label class="check"><input type="checkbox" id="fBeginnerOn"> 加白话版（题意绕时才需要）</label>
+          <div id="beginnerBody" hidden>
+            <label class="field"><span>白话版标题</span><input class="input" id="fBeginnerTitle" placeholder="把四个判断串起来"></label>
+            <label class="field"><span>白话版步骤 <em>每行一步</em></span><textarea class="textarea" id="fBeginnerSteps" rows="4"></textarea></label>
+            <label class="field"><span>收尾一句</span><textarea class="textarea" id="fBeginnerPunch" rows="2"></textarea></label>
+          </div>
+
+          <div class="form-grid">
+            <label class="field"><span>为什么一定对 <em>可选</em></span><textarea class="textarea" id="fCorrectness" rows="3" placeholder="有算法设计时才写。"></textarea></label>
+            <label class="field"><span>复杂度 <em>可选</em></span><textarea class="textarea" id="fComplexity" rows="3" placeholder="时间 O(n)，空间 O(n)。"></textarea></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>代码</h2><p>提交版：标准输入输出，不写 freopen</p></div></div>
+          <label class="field"><span>C++ 源码 <em>必填</em></span><textarea class="textarea mono code-area" id="fCode" rows="18" spellcheck="false"></textarea></label>
+          <label class="field"><span>代码说明 <em>必填</em></span><textarea class="textarea" id="fCodeNote" rows="2" placeholder="洛谷提交用这一版：标准输入输出，不要写 freopen。"></textarea></label>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h2>易错点</h2><p>3~6 条，按危险度排序</p></div>
+            <button class="btn small" type="button" id="btnAddPit">+ 添加一条</button>
+          </div>
+          <div class="rows" id="pitRows"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h2>测试用例</h2><p>只用于校验，不上页面</p></div>
+            <button class="btn small" type="button" id="btnAddTest">+ 添加一条</button>
+          </div>
+          <div class="rows" id="testRows"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>题面原文</h2><p>按段落保存，不改写</p></div></div>
+          <label class="field"><span>题面 <em>每行一段</em></span><textarea class="textarea" id="fStatement" rows="8"></textarea></label>
+        </div>
+
+      </form>
+
+      <div id="jsonPane" hidden>
+        <div class="card">
+          <div class="card-head">
+            <div><h2>JSON 源码</h2><p>高级编辑；保存前会先做 JSON 解析和字段校验</p></div>
+            <div class="row">
+              <button class="btn small" type="button" id="btnJsonSync">从表单刷新</button>
+              <button class="btn small" type="button" id="btnJsonApply">应用到表单</button>
+            </div>
+          </div>
+          <textarea class="textarea mono code-area" id="jsonEditor" rows="30" spellcheck="false"></textarea>
+        </div>
+      </div>
+
+      <div class="editor-foot">
+        <button class="btn primary" id="btnSave2">保存并发布</button>
+      </div>
+    </section>
+
+    <!-- ================= AI 生成 ================= -->
+    <section class="view" id="view-ai" hidden>
+      <div class="ai-grid">
+        <div class="card">
+          <div class="card-head"><div><h2>生成输入</h2><p>题面 + 一份 AC 代码，产出完整解析卡</p></div></div>
+
+          <label class="field">
+            <span>从题库载入</span>
+            <select class="input" id="aiLoad"><option value="">— 选择一道已有题目 —</option></select>
+          </label>
+
+          <div class="form-grid">
+            <label class="field"><span>题号 <em>必填</em></span><input class="input mono" id="aiId" placeholder="P12345"></label>
+            <label class="field"><span>题目名</span><input class="input" id="aiTitle" placeholder="留空则由模型生成"></label>
+            <label class="field"><span>比赛</span><input class="input" id="aiContest" placeholder="CSP-J 2026"></label>
+            <label class="field"><span>后缀</span><input class="input" id="aiSuffix" placeholder="民间数据"></label>
+            <label class="field"><span>原题链接</span><input class="input" id="aiUrl" placeholder="https://www.luogu.com.cn/problem/P12345"></label>
+            <label class="field"><span>时空限制</span><input class="input" id="aiLimits" placeholder="1 s / 256 MB"></label>
+          </div>
+
+          <label class="field"><span>题面原文</span><textarea class="textarea" id="aiStatement" rows="10" placeholder="把题面（含数据范围、子任务表）粘在这里。"></textarea></label>
+          <label class="field"><span>AC 代码</span><textarea class="textarea mono code-area" id="aiCode" rows="14" placeholder="粘贴一份已 AC 的 C++ 代码。"></textarea></label>
+          <label class="field"><span>额外要求 <em>可选</em></span><textarea class="textarea" id="aiExtra" rows="2" placeholder="例如：读者是普及组初学者；必须讲清 C 与 D 隔着过道。"></textarea></label>
+
+          <div class="form-grid">
+            <label class="field"><span>模式</span>
+              <select class="input" id="aiMode">
+                <option value="full">完整生成</option>
+                <option value="repair">按规范修复已有 JSON</option>
+              </select>
+            </label>
+            <label class="check standalone"><input type="checkbox" id="aiUseExisting"> 把当前载入的 JSON 作为参考 / 待修复内容</label>
+          </div>
+          <p class="hint" id="aiExistingHint" hidden></p>
+
+          <div class="row ai-actions">
+            <button class="btn primary" id="btnGenerate">开始生成</button>
+            <button class="btn danger ghost" id="btnCancelAi" hidden>取消任务</button>
+            <span class="hint" id="aiQueueHint"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h2>任务进度</h2><p>免费池串行，排队是正常的</p></div>
+            <span class="badge" id="aiStatusBadge">空闲</span>
+          </div>
+          <div class="progress"><div class="progress-bar" id="aiProgressBar"></div></div>
+          <pre class="log" id="aiLog">等待开始…</pre>
+
+          <div id="aiResult" hidden>
+            <div class="result-meta" id="aiMeta"></div>
+            <div class="alert error" id="aiErrors" hidden></div>
+            <div class="alert warn" id="aiWarnings" hidden></div>
+            <div class="row">
+              <button class="btn primary" id="btnUseResult">填入编辑器</button>
+              <button class="btn" id="btnUseAndSave">填入并保存</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 写作规范 ================= -->
+    <section class="view" id="view-rules" hidden>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2>题解写作与格式规范</h2>
+            <p>这段文本作为 system prompt 发给模型。保存后立即生效，下次生成使用新版本。</p>
+          </div>
+          <div class="row">
+            <button class="btn" id="btnRulesDefault">恢复默认</button>
+            <button class="btn primary" id="btnRulesSave">保存规范</button>
+          </div>
+        </div>
+        <textarea class="textarea mono rules-editor" id="rulesText" spellcheck="false"></textarea>
+        <div class="foot-meta">
+          <span id="rulesCount"></span>
+          <span id="rulesSaved"></span>
+          <span>保存位置：<code>admin/ai-rules.md</code></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 设置 ================= -->
+    <section class="view" id="view-settings" hidden>
+      <div class="settings-grid">
+        <div class="card">
+          <div class="card-head"><div><h2>LLM 网关</h2><p>只允许回环地址；本后台不直连模型厂商</p></div></div>
+          <label class="field"><span>网关地址</span><input class="input mono" id="setBaseUrl" placeholder="http://127.0.0.1:8765"></label>
+          <div class="form-grid">
+            <label class="field"><span>pool</span><input class="input mono" id="setPool" placeholder="free"></label>
+            <label class="field"><span>agent_id</span><input class="input mono" id="setAgent" placeholder="留空由网关选择"></label>
+            <label class="field"><span>model</span><input class="input mono" id="setModel" placeholder="留空由网关选择"></label>
+            <label class="field"><span>max_tokens</span><input class="input mono" id="setMaxTokens" type="number" min="1024" max="65536" step="1024"></label>
+            <label class="field"><span>temperature</span><input class="input mono" id="setTemp" type="number" min="0" max="2" step="0.1"></label>
+            <label class="field"><span>单次 timeout_ms</span><input class="input mono" id="setTimeout" type="number" min="30000" max="900000" step="10000"></label>
+            <label class="field"><span>排队 wait_timeout_ms</span><input class="input mono" id="setWait" type="number" min="0" max="900000" step="1000"></label>
+            <label class="field"><span>最多尝试次数</span><input class="input mono" id="setAttempts" type="number" min="1" max="6" step="1"></label>
+          </div>
+          <div class="row">
+            <button class="btn primary" id="btnSetSave">保存设置</button>
+            <button class="btn" id="btnGwTest">测试连接</button>
+            <span class="hint" id="settingsState"></span>
+          </div>
+          <pre class="gw-result" id="gwTestResult" hidden></pre>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>安全与 token</h2><p>网关 token 只从本机读取，不下发到浏览器</p></div></div>
+          <div class="kv" id="tokenState"></div>
+          <p class="hint">如果网关配置了 token，在启动后台前设置环境变量：</p>
+          <pre class="code-snip">$env:LLM_GATEWAY_TOKEN="你的网关token"
+node tools/admin-server.mjs</pre>
+          <p class="hint">也可以写到 <code>admin/gateway-token.txt</code>（已加入 .gitignore）。</p>
+          <hr class="hr">
+          <ul class="plain-list">
+            <li>后台只监听 <code>127.0.0.1</code>，拒绝非回环 Host。</li>
+            <li>不读取任何厂商 API Key，也不把网关地址发到公网。</li>
+            <li>题目改动先校验，再原子写入；构建失败自动回滚。</li>
+            <li>删除的题目移入 <code>tools/.tmp/trash/</code>，不会直接消失。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<dialog class="modal" id="modal">
+  <h3 id="modalTitle">确认</h3>
+  <div class="modal-body" id="modalBody"></div>
+  <div class="modal-actions">
+    <button class="btn" id="modalCancel" type="button">取消</button>
+    <button class="btn primary" id="modalOk" type="button">确定</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>

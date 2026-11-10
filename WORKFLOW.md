@@ -21,6 +21,7 @@
 problem-analysis/
 ├─ index.html                题库列表页（搜索 + 列表）
 ├─ problem.html              题解详情页（problem.html?id=P17827）
+├─ admin/                    本地后台页面（蓝色简约风）
 ├─ assets/
 │  ├─ style.css              全站样式（两页共用）
 │  ├─ common.js              公共工具：转义、行内格式、主题、toast
@@ -31,7 +32,9 @@ problem-analysis/
 │  └─ P17827.json            ★ 唯一的写作入口，一题一个文件
 ├─ tools/
 │  ├─ build.mjs              校验 + 打包 → assets/data.js
-│  └─ verify-code.mjs        编译代码 + 跑 tests
+│  ├─ verify-code.mjs        编译代码 + 跑 tests
+│  ├─ admin-server.mjs       本地后台（只监听 127.0.0.1）
+│  └─ lib/                   后台复用：schema / 网关客户端 / AI 流程
 ├─ WORKFLOW.md               本文档
 └─ PITFALLS.md               踩坑记录
 ```
@@ -59,6 +62,15 @@ node tools/verify-code.mjs P12345
 # 4. 打开看
 #    problem.html?id=P12345
 ```
+
+也可以启动本地后台，在网页里编辑、校验、预览，或让 AI 按规范生成解析卡：
+
+```bash
+node tools/admin-server.mjs
+# 打开 http://127.0.0.1:8790/admin/
+```
+
+后台保存时会自动执行 `build.mjs`；构建失败自动回滚，不会把坏数据留在 `problems/`。AI 生成的规范在 `admin/ai-rules.default.md`，可在后台「写作规范」里修改。
 
 构建失败的样子（这是它存在的意义）：
 
